@@ -1,10 +1,26 @@
 const express = require('express');
+const AWS = require('aws-sdk');
 const carrouselRouter = express.Router();
-const carrouselData = require('./../data/carrousel.json');
+
+const s3 = new AWS.S3();
+const bucketName = process.env.BUCKET_NAME || 'qcautomationpe2';
 
 carrouselRouter.get('', (req, res) => {
-    res.json(carrouselData);
-});
+  const params = {
+    Bucket: bucketName,
+  };
 
+  s3.listObjectsV2(params, (err, data) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send('Error fetching images');
+    } else {
+      const imageUrls = data.Contents.map(item => {
+        return { url: `https://${bucketName}.s3.amazonaws.com/${item.Key}` };
+      });
+      res.json(imageUrls);
+    }
+  });
+});
 
 module.exports = carrouselRouter;
